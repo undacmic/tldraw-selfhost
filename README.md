@@ -7,7 +7,7 @@ A Docker-first, self-hosted collaborative tldraw app with separate boards, multi
 ## Requirements
 
 - Node.js 24 and npm, or Docker with Compose.
-- A suitable tldraw license for production: <https://tldraw.dev/community/license>. Self-hosting does not waive SDK licensing.
+- A suitable tldraw license for production. See [Production and tldraw licensing](#production-and-tldraw-licensing); self-hosting does not waive SDK licensing.
 
 ## Run with Docker
 
@@ -56,7 +56,27 @@ The tag must exactly match `package.json` (`v0.2.0` → `0.2.0`); prerelease tag
 
 Actions uses its built-in `GITHUB_TOKEN` with `packages: write` and `contents: write` only in the jobs that need them. The GHCR package must be linked to this repository and grant it Actions write access (package **Settings → Manage Actions access**). The Docker image's `org.opencontainers.image.source` label identifies the source repository. No personal token needs to be stored as a repository secret.
 
-Optionally set the repository Actions **variable** `VITE_TLDRAW_LICENSE_KEY` to embed your frontend license key. It is public in the built frontend, not a secret. Without this variable, the image uses the same empty-key default as local builds; production licensing remains your responsibility.
+## Production and tldraw licensing
+
+When accessed on **localhost**, this application works without a tldraw license key, whether you use a published container image or develop locally, including in a devcontainer with its ports forwarded to localhost.
+
+If you deploy to an **HTTPS-enabled domain** such as `https://mydomain.com`, you must **build the application with a valid tldraw license key for that deployment**. The default published image does not include your license key and is intended for localhost use. A reverse proxy or TLS certificate does not supply a tldraw license.
+
+**Free hobby licenses are available by application** for eligible non-commercial projects. Apply on [tldraw's hobby license page](https://tldraw.dev/get-a-license/hobby). Approval is discretionary, and hobby licenses retain the **“made with tldraw”** watermark. Commercial deployments require an appropriate commercial license. See the [tldraw licensing terms](https://tldraw.dev/community/license) and [license-key documentation](https://tldraw.dev/sdk-features/license-key) for current requirements.
+
+To build your own licensed image:
+
+1. Copy `.env.example` to `.env` if you have not already done so.
+2. Set `VITE_TLDRAW_LICENSE_KEY=your-license-key` in `.env`.
+3. Rebuild and start the application:
+
+   ```sh
+   docker compose up -d --build
+   ```
+
+For images built by GitHub Actions, set the repository Actions **variable** `VITE_TLDRAW_LICENSE_KEY` before running the publishing workflow. The key is embedded in the public frontend at **build time**; it is not a secret, and changing a running container's environment does not update it. Changing the key requires a new build. Never replace an existing versioned release image to change its key: publish a new version or use your own image name/tag.
+
+Licensing does not make this application production-ready. Public deployment still requires the HTTPS reverse proxy, access controls, rate limits, backups, and other hardening described in this README.
 
 ## Boards, pages, and invitations
 
