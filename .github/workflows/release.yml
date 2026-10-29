@@ -1,0 +1,147 @@
+name: Test, publish, and release
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v[0-9]*.[0-9]*.[0-9]*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs'
+          const { version } = JSON.parse(readFileSync('package.json', 'utf8'))
+          const tag = process.env.GITHUB_REF_NAME
+          if (!/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(tag) || tag !== `v${version}`) {
+            throw new Error(`Release tag ${tag} must match package.json version v${version} (stable releases only)`)
+          }
+          NODE
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  publish:
+    needs: test
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      image: ${{ steps.image.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set lowercase image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: metadata
+        with:
+          images: ${{ steps.image.outputs.name }}
+          flavor: latest=false
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}}
+      - name: Build and push AMD64 and ARM64 images
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          build-args: |
+            VITE_TLDRAW_LICENSE_KEY=${{ vars.VITE_TLDRAW_LICENSE_KEY }}
+          # Avoid the attestation/index publishing failure seen on the initial GHCR push.
+          provenance: false
+          sbom: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  release:
+    needs: publish
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub Release with image details and generated notes
+        uses: actions/github-script@v7
+        env:
+          IMAGE: ${{ needs.publish.outputs.image }}
+          DIGEST: ${{ needs.publish.outputs.digest }}
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            const tag = context.ref.replace('refs/tags/', '')
+            try {
+              const { data } = await github.rest.repos.getReleaseByTag({ owner, repo, tag })
+              core.info(`Release already exists: ${data.html_url}`)
+              return
+            } catch (error) {
+              if (error.status !== 404) throw error
+            }
+            const version = tag.slice(1)
+            const image = process.env.IMAGE
+            const body = [
+              `## Container image`,
+              '',
+              `Supports **linux/amd64** and **linux/arm64**.`,
+              '',
+              '```sh',
+              `docker pull ${image}:${version}`,
+              '```',
+              '',
+              `Digest: \`${process.env.DIGEST}\``,
+              '',
+              `The \`${version}\` image is the fixed release; \`latest\` follows the latest successful build of \`main\`.`,
+              '',
+              '**Deployment status:** development application, not production-ready. Keep the backend private, run one replica, and back up the entire data volume before upgrading. Production use also requires a suitable tldraw license. See the repository README for setup and limitations.',
+              '',
+            ].join('\n')
+            const { data } = await github.rest.repos.createRelease({
+              owner, repo, tag_name: tag, name: tag, body,
+              generate_release_notes: true,
+              draft: false,
+              prerelease: false,
+              make_latest: 'true',
+            })
+            core.info(`Published release: ${data.html_url}`)

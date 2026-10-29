@@ -9,6 +9,7 @@ ENV VITE_TLDRAW_LICENSE_KEY=$VITE_TLDRAW_LICENSE_KEY
 RUN npm run build && npm prune --omit=dev
 
 FROM node:24-bookworm-slim AS runtime
+LABEL org.opencontainers.image.source="https://github.com/undacmic/tldraw-selfhost"
 WORKDIR /app
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=5858 DATA_DIR=/data/rooms
 COPY --from=build --chown=node:node /app/node_modules ./node_modules

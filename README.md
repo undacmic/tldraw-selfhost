@@ -18,6 +18,46 @@ docker compose up --build
 
 Open <http://localhost:8080/>. The runtime uses non-root `node` (UID/GID 1000). Compose publishes only on host loopback. `ALLOWED_ORIGINS` must match the exact browser origin.
 
+## Published images and releases
+
+Images are published to `ghcr.io/undacmic/tldraw-selfhost` for **Linux AMD64 and ARM64**:
+
+- `latest` rotates after each successful build of `main`. Use it to follow ongoing development.
+- Version tags such as `0.1.0` identify a fixed release. Use these for repeatable deployments; never move or reuse a published version tag.
+- [GitHub Releases](https://github.com/undacmic/tldraw-selfhost/releases) contains release notes, the image digest, and pull instructions for each version.
+
+```sh
+docker pull ghcr.io/undacmic/tldraw-selfhost:0.1.0
+docker run -d --name tldraw-selfhost --init \
+  -p 127.0.0.1:8080:5858 \
+  -e ALLOWED_ORIGINS=http://localhost:8080 \
+  -e SESSION_COOKIE_SECURE=false \
+  -v tldraw-rooms:/data/rooms \
+  --security-opt no-new-privileges:true \
+  ghcr.io/undacmic/tldraw-selfhost:0.1.0
+```
+
+If the package is private, authenticate with `docker login ghcr.io` using a GitHub personal access token (classic) with `read:packages`. Repository visibility and package visibility are separate settings.
+
+### Publish a release
+
+The [release workflow](.github/workflows/release.yml) runs unit tests, a production build, and Chromium browser tests before publishing. Pull requests only run checks. A push to `main` publishes `latest`; a stable version tag publishes the matching image tag and then creates a GitHub Release with generated notes. Release builds do not move `latest` backwards if an older commit is tagged.
+
+1. Update `version` in `package.json` and `package-lock.json` (for example, `npm version 0.2.0 --no-git-tag-version`).
+2. Commit and push the change to `main`, then wait for its workflow to pass.
+3. Create and push the matching tag:
+
+   ```sh
+   git tag -a v0.2.0 -m "Release 0.2.0"
+   git push origin v0.2.0
+   ```
+
+The tag must exactly match `package.json` (`v0.2.0` → `0.2.0`); prerelease tags are not currently supported. Re-running the workflow does not create duplicate GitHub Releases. If publication fails, fix the underlying issue and rerun the failed jobs rather than moving the tag.
+
+Actions uses its built-in `GITHUB_TOKEN` with `packages: write` and `contents: write` only in the jobs that need them. The GHCR package must be linked to this repository and grant it Actions write access (package **Settings → Manage Actions access**). The Docker image's `org.opencontainers.image.source` label identifies the source repository. No personal token needs to be stored as a repository secret.
+
+Optionally set the repository Actions **variable** `VITE_TLDRAW_LICENSE_KEY` to embed your frontend license key. It is public in the built frontend, not a secret. Without this variable, the image uses the same empty-key default as local builds; production licensing remains your responsibility.
+
 ## Boards, pages, and invitations
 
 1. On **Your boards**, enter a name and select **Create board**.
