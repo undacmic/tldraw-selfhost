@@ -1,0 +1,60 @@
+:root {
+  /* tldraw.com's UI uses Inter, separate from fonts chosen for canvas shapes. */
+  --app-font-ui: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  font-family: var(--app-font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html, body, #root { width: 100%; height: 100%; margin: 0; }
+.editor { position: relative; flex: 1; min-height: 180px; }
+
+/* Match the dotcom editor UI without overriding canvas text's own font styles. */
+.tl-container {
+  font-family: var(--app-font-ui);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+button, input, select, textarea { font: inherit; }
+* { box-sizing: border-box; }
+body { background: #f8fafc; color: #172033; }
+:where(.board-header, .home, .notice, .invite-panel, .page-controls) button { cursor: pointer; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; background: white; color: inherit; }
+:where(.board-header, .home, .notice, .invite-panel, .page-controls) button:hover { background: #f1f5f9; }
+:where(.board-header, .home, .notice, .invite-panel, .page-controls) button:disabled { cursor: default; opacity: .55; }
+:where(.board-header, .home, .notice, .invite-panel, .page-controls) :is(button, input, select):focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+:where(.board-header, .home, .notice, .invite-panel, .page-controls) :is(input, select) { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; color: inherit; }
+h1 { font-size: 20px; margin: 0; }
+h2 { font-size: 15px; margin: 0; }
+.workspace { height: 100%; display: flex; flex-direction: column; }
+.board-header, .section-heading { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.board-header { padding: 10px 16px; background: white; border-bottom: 1px solid #e2e8f0; }
+.board-header h1 { font-size: 15px; flex: 1; }
+.home-header, .home { padding: 24px; width: min(760px, 100%); margin: 0 auto; }
+.home-header { padding-bottom: 0; }
+.home { overflow-y: auto; }
+.new-board, .invite-panel form { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+:where(.home, .notice, .invite-panel, .page-controls) label { display: flex; flex-direction: column; gap: 5px; }
+.new-board label { flex: 1; }
+.board-list { padding: 0; list-style: none; display: grid; gap: 10px; }
+.board-list button { width: 100%; padding: 16px; display: flex; align-items: center; justify-content: space-between; }
+.role-badge { background: #e2e8f0; padding: 3px 7px; border-radius: 4px; font-size: 11px; }
+.notice, .invite-panel { padding: 16px; border-bottom: 1px solid #dbeafe; background: #eff6ff; flex-shrink: 0; }
+.invite-panel { max-height: 45vh; overflow-y: auto; }
+.section-heading { justify-content: space-between; }
+.link-box { display: flex; gap: 8px; align-items: end; margin: 12px 0; }
+.link-box label { flex: 1; min-width: 0; }
+.link-box input { width: 100%; }
+.muted { color: #536176; }
+[role='alert'] { color: #9f1239; }
+.page-controls { display: flex; align-items: end; gap: 8px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; pointer-events: auto; margin-top: 8px; }
+.page-controls label { flex-direction: row; align-items: center; }
+@media (max-width: 600px) {
+  .board-header { gap: 8px; padding: 8px; }
+  .home, .home-header { padding: 16px; }
+  .page-controls { max-width: 95vw; }
+}
