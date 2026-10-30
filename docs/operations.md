@@ -6,7 +6,7 @@ For the shortest Docker + agent setup, start with the [README](../README.md). Th
 
 ## Browser-only mode
 
-Use this **instead of** the MCP-owned server if you want a whiteboard without an agent. Build the image as described in the README, then run:
+Use this **instead of** the MCP-owned server if you want a whiteboard without an agent. Pull the image as described in the README, then run:
 
 ```sh
 docker run -d --name tldraw-web --init \
@@ -15,7 +15,7 @@ docker run -d --name tldraw-web --init \
   -e SESSION_COOKIE_SECURE=false \
   -v tldraw-web-rooms:/data/rooms \
   --security-opt no-new-privileges:true \
-  tldraw-selfhost:local
+  ghcr.io/undacmic/tldraw-selfhost:0.2.0
 ```
 
 Open <http://localhost:8080/>. Stop/start it with `docker stop tldraw-web` / `docker start tldraw-web`. This mode does not enable MCP. The MCP mode in [client setup](mcp-clients.md) starts its own web server; do not run both on port 8080 or point them at the same data volume.
@@ -46,6 +46,8 @@ docker build \
   --build-arg VITE_TLDRAW_LICENSE_KEY=your-license-key \
   -t tldraw-selfhost:local .
 ```
+
+Use your own `tldraw-selfhost:local` image tag instead of the published GHCR image in your container/MCP configuration. Do not overwrite a published version tag with a custom licensed build.
 
 For Compose, set `VITE_TLDRAW_LICENSE_KEY` in `.env` and run `docker compose up -d --build`.
 

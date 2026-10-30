@@ -1,9 +1,9 @@
 # Connect an MCP client
 
-First [build the image](../README.md#1-build-the-image):
+First [get the image](../README.md#1-get-the-image):
 
 ```sh
-docker build -t tldraw-selfhost:local .
+docker pull ghcr.io/undacmic/tldraw-selfhost:0.2.0
 ```
 
 Docker must be running and `docker` must be on your client's PATH. Use the configuration for **one** client below; merge it into existing settings rather than replacing unrelated servers. No host Node.js, API key, separate web server, or MCP URL is needed.
@@ -15,7 +15,7 @@ All examples use **http://localhost:8080** and the persistent **`tldraw-mcp-room
 Register a user-scoped local server:
 
 ```sh
-claude mcp add --transport stdio --scope user tldraw -- docker run --rm -i --init -p 127.0.0.1:8080:5858 -e PUBLIC_ORIGIN=http://localhost:8080 -v tldraw-mcp-rooms:/data/rooms --security-opt no-new-privileges:true tldraw-selfhost:local node dist/server/mcp.js
+claude mcp add --transport stdio --scope user tldraw -- docker run --rm -i --init -p 127.0.0.1:8080:5858 -e PUBLIC_ORIGIN=http://localhost:8080 -v tldraw-mcp-rooms:/data/rooms --security-opt no-new-privileges:true ghcr.io/undacmic/tldraw-selfhost:0.2.0 node dist/server/mcp.js
 ```
 
 Run `claude mcp list` to check registration. In Claude Code, use `/mcp` to check the connection and review tool permissions. Then [try drawing](#try-it).
@@ -37,7 +37,7 @@ Open **Settings → Developer → Edit Config**. Merge this into `claude_desktop
         "-e", "PUBLIC_ORIGIN=http://localhost:8080",
         "-v", "tldraw-mcp-rooms:/data/rooms",
         "--security-opt", "no-new-privileges:true",
-        "tldraw-selfhost:local", "node", "dist/server/mcp.js"
+        "ghcr.io/undacmic/tldraw-selfhost:0.2.0", "node", "dist/server/mcp.js"
       ]
     }
   }
@@ -65,7 +65,7 @@ Open Cursor's MCP settings, enable `tldraw`, and review its tools. Then [try dra
 2. Choose **Command (stdio)** and paste this launch command:
 
    ```sh
-   docker run --rm -i --init -p 127.0.0.1:8080:5858 -e PUBLIC_ORIGIN=http://localhost:8080 -v tldraw-mcp-rooms:/data/rooms --security-opt no-new-privileges:true tldraw-selfhost:local node dist/server/mcp.js
+   docker run --rm -i --init -p 127.0.0.1:8080:5858 -e PUBLIC_ORIGIN=http://localhost:8080 -v tldraw-mcp-rooms:/data/rooms --security-opt no-new-privileges:true ghcr.io/undacmic/tldraw-selfhost:0.2.0 node dist/server/mcp.js
    ```
 
 3. Name the server `tldraw` and select a personal/global configuration destination.
@@ -80,7 +80,7 @@ Use the guided flow to select the configuration format appropriate to your insta
 Register the server with the CLI:
 
 ```sh
-codex mcp add tldraw -- docker run --rm -i --init -p 127.0.0.1:8080:5858 -e PUBLIC_ORIGIN=http://localhost:8080 -v tldraw-mcp-rooms:/data/rooms --security-opt no-new-privileges:true tldraw-selfhost:local node dist/server/mcp.js
+codex mcp add tldraw -- docker run --rm -i --init -p 127.0.0.1:8080:5858 -e PUBLIC_ORIGIN=http://localhost:8080 -v tldraw-mcp-rooms:/data/rooms --security-opt no-new-privileges:true ghcr.io/undacmic/tldraw-selfhost:0.2.0 node dist/server/mcp.js
 ```
 
 Run `codex mcp list` to check registration. Codex CLI and the IDE extension share MCP configuration; reload the client after changing it. Then [try drawing](#try-it).
@@ -96,7 +96,7 @@ args = [
   "-e", "PUBLIC_ORIGIN=http://localhost:8080",
   "-v", "tldraw-mcp-rooms:/data/rooms",
   "--security-opt", "no-new-privileges:true",
-  "tldraw-selfhost:local", "node", "dist/server/mcp.js"
+  "ghcr.io/undacmic/tldraw-selfhost:0.2.0", "node", "dist/server/mcp.js"
 ]
 startup_timeout_sec = 30
 ```
@@ -120,7 +120,7 @@ For **OpenCode 2.x**, merge this into your project's `opencode.json` or your exi
           "-e", "PUBLIC_ORIGIN=http://localhost:8080",
           "-v", "tldraw-mcp-rooms:/data/rooms",
           "--security-opt", "no-new-privileges:true",
-          "tldraw-selfhost:local", "node", "dist/server/mcp.js"
+          "ghcr.io/undacmic/tldraw-selfhost:0.2.0", "node", "dist/server/mcp.js"
         ],
         "timeout": { "startup": 30000 }
       }
@@ -179,7 +179,7 @@ Native mode defaults to an automatically selected loopback port and `~/.tldraw-s
 | Symptom | Check |
 | --- | --- |
 | Docker cannot connect | Start Docker Desktop/Engine and verify `docker info` in a terminal. |
-| Image not found | Run the build command first. The examples use the local tag `tldraw-selfhost:local`. |
+| Image not found | Pull `ghcr.io/undacmic/tldraw-selfhost:0.2.0` first. If GHCR denies access, authenticate with `docker login ghcr.io` and a token with `read:packages`. |
 | Agent cannot find Docker/Node | Use the executable's absolute path in the client configuration. |
 | Port 8080 already allocated | Stop the browser-only/other MCP server, or choose a different port **and** `PUBLIC_ORIGIN`. |
 | Data directory locked | Stop the other server using the volume. After a crash, follow [lock recovery](operations.md#locks-and-crashes); never delete a live server's lock. |

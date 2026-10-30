@@ -22,15 +22,15 @@ The editor uses the **tldraw SDK**, under the [tldraw license](https://tldraw.de
 
 This repository does not yet include a license for its original code. Dependencies retain their own licenses.
 
-## 1. Build the image
+## 1. Get the image
 
-Install and start **Docker Desktop** or **Docker Engine**. From a checkout of this repository:
+Install and start **Docker Desktop** or **Docker Engine**, then pull the release:
 
 ```sh
-docker build -t tldraw-selfhost:local .
+docker pull ghcr.io/undacmic/tldraw-selfhost:0.2.0
 ```
 
-That's the only build step. You do **not** need Node.js installed on the host. These instructions build the current checkout because older [published images](https://github.com/undacmic/tldraw-selfhost/releases) may not include MCP.
+You do **not** need Node.js or a source checkout. Version **0.2.0** includes the local MCP server and supports Linux AMD64 and ARM64. See the [release notes](https://github.com/undacmic/tldraw-selfhost/releases/tag/v0.2.0). If the package is private, authenticate with `docker login ghcr.io` using a token with `read:packages`.
 
 ## 2. Connect your agent
 

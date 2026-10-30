@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -39,6 +39,8 @@ test('MCP negotiates tools, scopes boards, and issues browser editor links witho
   const directory = mkdtempSync(join(tmpdir(), 'tldraw-mcp-access-'))
   const f = await fixture(directory)
   try {
+    const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
+    assert.deepEqual(f.client.getServerVersion(), { name: 'tldraw-selfhost', version })
     assert.equal((await f.client.listTools()).tools.length, 7)
     assert.deepEqual((await f.app.inject('/healthz')).json(), { status: 'ok', mcp: 'stdio' })
     assert.equal((await f.app.inject('/mcp')).statusCode, 404)

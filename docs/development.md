@@ -60,15 +60,25 @@ These tests exercise the MCP protocol directly. They are not an end-to-end inter
 
 The UI uses locally served **Inter**, matching tldraw.com's UI family and 12px/500 editor styling. Canvas text retains official **Shantell Sans**, **IBM Plex Sans**, **IBM Plex Serif**, and **IBM Plex Mono**, including bold/italic variants. Fonts, icons, and translations come from version-matched packages, without requiring the tldraw CDN. Existing shape fonts are not rewritten. External embeds are not made offline by this bundling.
 
+## Build your own image
+
+From the source checkout:
+
+```sh
+docker build -t tldraw-selfhost:local .
+```
+
+To test it with an agent, replace the published `ghcr.io/undacmic/tldraw-selfhost:0.2.0` image in the [client examples](mcp-clients.md) with `tldraw-selfhost:local`. Keep the other Docker arguments unchanged. See [licensed builds](operations.md#licensed-builds) for the license-key build argument.
+
 ## Published images
 
 Images are published to `ghcr.io/undacmic/tldraw-selfhost` for **Linux AMD64 and ARM64**:
 
 - `latest` follows successful builds of `main`.
-- Version tags such as `0.1.0` identify fixed releases. Never move or reuse a published version tag.
+- Version tags such as `0.2.0` identify fixed releases. Never move or reuse a published version tag.
 - [GitHub Releases](https://github.com/undacmic/tldraw-selfhost/releases) contains release notes, digests, and pull instructions.
 
-Older releases may not contain MCP; the quickstart intentionally builds the current checkout. Select a release whose notes include the features you need, and prefer an immutable image digest for repeatable deployments.
+MCP is available starting with **0.2.0**; the quickstart pulls that versioned release. Select a release whose notes include the features you need, and prefer an immutable image digest for repeatable deployments.
 
 If the package is private, authenticate with `docker login ghcr.io` using a GitHub personal access token (classic) with `read:packages`. Repository visibility and package visibility are separate settings.
 
@@ -79,18 +89,18 @@ The [release workflow](../.github/workflows/release.yml) runs unit tests, a prod
 1. Update `version` in `package.json` and `package-lock.json`, for example:
 
    ```sh
-   npm version 0.2.0 --no-git-tag-version
+   npm version 0.2.1 --no-git-tag-version
    ```
 
 2. Commit and push to `main`, then wait for its workflow to pass.
 3. Create and push the matching tag:
 
    ```sh
-   git tag -a v0.2.0 -m "Release 0.2.0"
-   git push origin v0.2.0
+   git tag -a v0.2.1 -m "Release 0.2.1"
+   git push origin v0.2.1
    ```
 
-The tag must exactly match `package.json` (`v0.2.0` → `0.2.0`); prerelease tags are not currently supported. Re-running the workflow does not create duplicate GitHub Releases. If publication fails, fix the underlying issue and rerun the failed jobs rather than moving the tag.
+The tag must exactly match `package.json` (`v0.2.1` → `0.2.1`); prerelease tags are not currently supported. Re-running the workflow does not create duplicate GitHub Releases. If publication fails, fix the underlying issue and rerun the failed jobs rather than moving the tag.
 
 Actions uses its built-in `GITHUB_TOKEN`, with `packages: write` and `contents: write` only in jobs that need them. The GHCR package must be linked to this repository and grant it Actions write access (**Settings → Manage Actions access**). The image's `org.opencontainers.image.source` label identifies the source repository. No personal token needs to be stored as a repository secret.
 
