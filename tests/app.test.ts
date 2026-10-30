@@ -11,7 +11,7 @@ test('health and WebSocket preflight validation', async () => {
   try {
     const health = await app.inject('/healthz')
     assert.equal(health.statusCode, 200)
-    assert.deepEqual(health.json(), { status: 'ok', mcp: 'not-implemented' })
+    assert.deepEqual(health.json(), { status: 'ok', mcp: 'disabled' })
 
     for (const [url, origin, expected] of [
       ['/sync/bad.room?sessionId=abc', 'http://localhost:8080', 400],

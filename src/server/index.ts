@@ -22,4 +22,5 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   })
 }
 
-await app.listen({ port, host: process.env.HOST ?? '127.0.0.1' })
+try { await app.listen({ port, host: process.env.HOST ?? '127.0.0.1' }) }
+catch (error) { await app.close(); throw error }

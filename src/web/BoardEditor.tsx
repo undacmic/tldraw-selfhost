@@ -20,6 +20,7 @@ function PageControls() {
         onChange={(event) => editor.setCurrentPage(event.target.value as TLPageId)}>
         {pages.map((page) => <option key={page.id} value={page.id}>{page.name}</option>)}
       </select></label>
+      <button type="button" onClick={() => editor.zoomToFit({ animation: { duration: 200 } })}>Fit drawing</button>
       {!readOnly && <button type="button" onClick={() => {
         const id = PageRecordType.createId()
         editor.createPage({ id, name: `Page ${pages.length + 1}` })
@@ -37,6 +38,9 @@ export function BoardEditor({ board }: { board: BoardSummary }) {
   return <div className="editor">
     <Tldraw store={store} assetUrls={assetUrls} components={components}
       licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY}
-      onMount={(editor) => { editor.updateInstanceState({ isReadonly: board.role === 'viewer' }) }} />
+      onMount={(editor) => {
+        editor.updateInstanceState({ isReadonly: board.role === 'viewer' })
+        editor.zoomToFit()
+      }} />
   </div>
 }

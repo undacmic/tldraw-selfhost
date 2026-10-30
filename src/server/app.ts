@@ -8,32 +8,47 @@ import { isValidRoomId } from '../shared/room-id.js'
 import { createAccessStore } from './access.js'
 import { readSession, registerBoardRoutes } from './board-routes.js'
 
+declare module 'fastify' {
+  interface FastifyInstance {
+    boardServices: { rooms: ReturnType<typeof createRoomRegistry>; access: ReturnType<typeof createAccessStore> }
+  }
+}
+
 export interface AppOptions {
   dataDirectory: string
   allowedOrigins: string[]
   webDirectory?: string
   secureCookies?: boolean
   logger?: boolean
+  mcpMode?: 'stdio'
+  allowedHosts?: string[]
 }
 
 export async function createApp(options: AppOptions) {
   const app = fastify({ logger: options.logger ?? false, bodyLimit: 8192 })
   const rooms = createRoomRegistry(options.dataDirectory)
-  const access = createAccessStore(options.dataDirectory)
-  const allowedOrigins = new Set(options.allowedOrigins)
+  let access: ReturnType<typeof createAccessStore>
+  try { access = createAccessStore(options.dataDirectory) }
+  catch (error) { rooms.close(); throw error }
+  app.addHook('onClose', async () => { rooms.close(); access.close() })
+  const allowedOrigins = options.allowedOrigins
 
   app.addHook('onRequest', async (request, reply) => {
+    if (options.allowedHosts && !options.allowedHosts.includes(request.headers.host ?? '')) {
+      return reply.code(403).send({ error: 'Host not allowed' })
+    }
     reply.header('Referrer-Policy', 'no-referrer')
     reply.header('X-Content-Type-Options', 'nosniff')
     if (request.url.startsWith('/api/')) {
       reply.header('Cache-Control', 'no-store')
-      if (request.method !== 'GET' && !allowedOrigins.has(request.headers.origin ?? '')) {
+      if (request.method !== 'GET' && !allowedOrigins.includes(request.headers.origin ?? '')) {
         return reply.code(403).send({ error: 'Origin not allowed' })
       }
     }
   })
-  await app.register(websocket, { options: { maxPayload: 1024 * 1024 } })
-  app.get('/healthz', async () => ({ status: 'ok', mcp: 'not-implemented' }))
+  try { await app.register(websocket, { options: { maxPayload: 1024 * 1024 } }) }
+  catch (error) { await app.close(); throw error }
+  app.get('/healthz', async () => ({ status: 'ok', mcp: options.mcpMode ?? 'disabled' }))
   registerBoardRoutes(app, access, options.secureCookies ?? false)
 
   app.get<{ Params: { roomId: string }; Querystring: { sessionId?: string } }>(
@@ -47,7 +62,7 @@ export async function createApp(options: AppOptions) {
         if (!request.query.sessionId || request.query.sessionId.length > 256) {
           return reply.code(400).send({ error: 'Invalid session ID' })
         }
-        if (!allowedOrigins.has(request.headers.origin ?? '')) {
+        if (!allowedOrigins.includes(request.headers.origin ?? '')) {
           return reply.code(403).send({ error: 'Origin not allowed' })
         }
         const visitor = readSession(access, request)
@@ -75,9 +90,10 @@ export async function createApp(options: AppOptions) {
   )
 
   if (options.webDirectory && existsSync(options.webDirectory)) {
-    await app.register(staticFiles, { root: resolve(options.webDirectory) })
+    try { await app.register(staticFiles, { root: resolve(options.webDirectory) }) }
+    catch (error) { await app.close(); throw error }
   }
 
-  app.addHook('onClose', async () => { rooms.close(); access.close() })
+  app.decorate('boardServices', { rooms, access })
   return app
 }

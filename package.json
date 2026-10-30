@@ -12,6 +12,7 @@
     "dev:web": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build && tsc -p tsconfig.server.json",
     "start": "node dist/server/index.js",
+    "mcp": "node dist/server/mcp.js",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "test:e2e": "npm run build && playwright test"
@@ -20,14 +21,18 @@
     "@fastify/static": "10.1.8",
     "@fastify/websocket": "^11.0.0",
     "@fontsource-variable/inter": "5.3.0",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@tldraw/assets": "5.6.0",
     "@tldraw/sync": "5.6.0",
     "@tldraw/sync-core": "5.6.0",
+    "@tldraw/tlschema": "5.6.0",
+    "@tldraw/utils": "5.6.0",
     "better-sqlite3": "^12.10.0",
     "fastify": "5.12.7",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "tldraw": "5.6.0"
+    "tldraw": "5.6.0",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

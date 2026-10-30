@@ -8,9 +8,10 @@ export default defineConfig({
     channel: process.env.PLAYWRIGHT_CHANNEL,
   },
   webServer: {
-    command: 'npm start',
+    command: 'node dist/server/index.js',
     url: 'http://127.0.0.1:5860/healthz',
     reuseExistingServer: false,
+    gracefulShutdown: { signal: 'SIGTERM', timeout: 5000 },
     env: {
       PORT: '5860',
       HOST: '127.0.0.1',

@@ -28,6 +28,9 @@ export function createAccessStore(directory: string, now = Date.now) {
       token_hash TEXT PRIMARY KEY, board_id TEXT NOT NULL REFERENCES boards(id),
       role TEXT NOT NULL CHECK(role IN ('owner','editor','viewer')), expires_at INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS mcp_boards (
+      board_id TEXT PRIMARY KEY REFERENCES boards(id)
+    );
   `)
 
   function sessionId(secret: string | undefined): string | undefined {
@@ -89,6 +92,28 @@ export function createAccessStore(directory: string, now = Date.now) {
              WHEN grants.role = 'editor' OR excluded.role = 'editor' THEN 'editor' ELSE 'viewer' END`)
         .run(session, invite.board_id, invite.role)
       return getBoard(session, invite.board_id)
+    },
+    // A local stdio client controls only boards explicitly created for this data directory's MCP.
+    // This authority is persisted separately from expiring browser sessions and is never exposed over HTTP.
+    listMcpBoards(): Pick<BoardSummary, 'id' | 'name'>[] {
+      return db.prepare('SELECT b.id, b.name FROM boards b JOIN mcp_boards m ON m.board_id = b.id ORDER BY b.name, b.id')
+        .all() as Pick<BoardSummary, 'id' | 'name'>[]
+    },
+    getMcpBoard(boardId: string): Pick<BoardSummary, 'id' | 'name'> | undefined {
+      return db.prepare('SELECT b.id, b.name FROM boards b JOIN mcp_boards m ON m.board_id = b.id WHERE b.id = ?')
+        .get(boardId) as Pick<BoardSummary, 'id' | 'name'> | undefined
+    },
+    createMcpBoard(name: string) {
+      const id = randomUUID()
+      return db.transaction(() => {
+        db.prepare('INSERT INTO boards VALUES (?, ?)').run(id, name)
+        db.prepare('INSERT INTO mcp_boards VALUES (?)').run(id)
+        return { id, name }
+      })()
+    },
+    createMcpBrowserInvite(boardId: string) {
+      if (!this.getMcpBoard(boardId)) throw new Error('MCP board not found')
+      return issueInvite(boardId, 'editor', 1)
     },
     recoverBoard(boardId: string, name: string) {
       // Offline/admin CLI only. Never expose this operation through an unauthenticated HTTP route.
